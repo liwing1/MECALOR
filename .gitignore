@@ -1,0 +1,10 @@
+# Ignore all files
+emeter-app/*/*
+emeter-metrology/*/*
+emeter-toolkit/*/*
+!*.c
+!*.h
+
+GUI/
+settings/
+.vscode/
