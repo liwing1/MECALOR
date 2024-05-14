@@ -6,12 +6,13 @@
 #include "emeter-oled.h"  
 #include "oled-font.h"
 
-// Endereço do SSD1306
+// Endereï¿½o do SSD1306
 #define SSD1306_ADDRESS 0x3C
 
 
 
-// Funções de controle I2C
+
+// Funï¿½ï¿½es de controle I2C
 void I2C_init();
 void I2C_start();
 void I2C_stop();
@@ -27,11 +28,10 @@ void main(void) {
 
     // Inicializar o display SSD1306
     SSD1306_sendCommand(SSD1306_SET_DISPLAY_ON);
-
-    // Escrever seu código para controlar o display SSD1306 aqui
+    // Escrever seu cï¿½digo para controlar o display SSD1306 aqui
 
     while(1) {
-        // Seu código principal aqui
+        // Seu cï¿½digo principal aqui
     }
 }*/
 
@@ -40,14 +40,15 @@ void main(void) {
 void i2c_init() {
 
     // Configurar I2C
-    UCB0CTLW0 |= UCSWRST;                      // Colocar e-SPI em estado de reinicialização para configuração
-    UCB0CTLW0 |= UCMODE_3 | UCSYNC | UCMST|UCSSEL__SMCLK; // I2C master mode, Modo I2C, Síncrono
-    //UCB0CTLW0 |= UCMODE_3 | UCMST|UCSSEL__SMCLK; // I2C master mode, Modo I2C, Síncrono    
-    //UCB0CTLW1 |= UCASTP_2;                      // Autogeração de STOP
-    //UCB0BRW = 250;                              // Fator de divisão do clock SMCLK
-    UCB0BRW = 250/2;                              // Fator de divisão do clock SMCLK
+    UCB0CTLW0 |= UCSWRST;                      // Colocar e-SPI em estado de reinicializaï¿½ï¿½o para configuraï¿½ï¿½o
+    UCB0CTLW0 |= UCMODE_3 | UCSYNC | UCMST|UCSSEL__SMCLK; // I2C master mode, Modo I2C, Sï¿½ncrono
+    //UCB0CTLW0 |= UCMODE_3 | UCMST|UCSSEL__SMCLK; // I2C master mode, Modo I2C, Sï¿½ncrono    
+    //UCB0CTLW1 |= UCASTP_2;                      // Autogeraï¿½ï¿½o de STOP
+    //UCB0BRW = 250;                              // Fator de divisï¿½o do clock SMCLK
+    UCB0BRW = 250/2;                              // Fator de divisï¿½o do clock SMCLK
     UCB0IE = 0; 
-    UCB0CTLW0 &= ~UCSWRST;                     // Liberar e-SPI da reinicialização
+    UCB0CTLW0 &= ~UCSWRST;                     // Liberar e-SPI da reinicializaï¿½ï¿½o
+
 
     UCB0I2CSA=0x3C;  // UCB0I2CSA = SlaveAddress
     
@@ -56,17 +57,17 @@ void i2c_init() {
 
 void I2C_start() {
     UCB0CTLW0 |= UCTR | UCTXSTT;               // Transmitir modo, Gerar START
-    while (UCB0CTLW0 & UCTXSTT);               // Aguardar até que o START seja enviado
+    while (UCB0CTLW0 & UCTXSTT);               // Aguardar atï¿½ que o START seja enviado
 }
 
 void I2C_stop() {
     UCB0CTLW0 |= UCTXSTP;                      // Gerar STOP
-    while (UCB0CTLW0 & UCTXSTP);               // Aguardar até que o STOP seja enviado
+    while (UCB0CTLW0 & UCTXSTP);               // Aguardar atï¿½ que o STOP seja enviado
 }
 
 void I2C_send(uint8_t byte) {  
     UCB0TXBUF = byte;                          // Transmitir byte
-    while (!(UCB0IFG & UCTXIFG));              // Aguardar até que a transmissão seja concluída
+    while (!(UCB0IFG & UCTXIFG));              // Aguardar atï¿½ que a transmissï¿½o seja concluï¿½da
 }
 
 void SSD1306_Init(void) {

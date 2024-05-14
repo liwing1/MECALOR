@@ -294,7 +294,6 @@ static __inline__ void oled_active_power()
             ssd1306_printText(4, 7,"C:  == OVERVOLTAGE =="); 
         else    
             Oled_display_valor(4,7,x,3,"C: "," V");
-
     }
 #endif    
     
@@ -325,7 +324,6 @@ static __inline__ void oled_active_power()
             ssd1306_printText(4, 7,"C:  == OVERCURRENT =="); 
         else    
             Oled_display_valor(4,7,x,3,"C: "," A");
-
     }
 #endif    
  
@@ -532,26 +530,7 @@ void display_oled_item(int item)
     }        
 }
 
-
-
-uint16_t CalculateCRC(uint8_t *data, uint16_t length) {
-    // Implemente o algoritmo de c�lculo CRC-16
-    uint16_t crc = 0xFFFF;
-
-    for (int i = 0; i < length; i++) {
-        crc ^= data[i];
-        for (int j = 0; j < 8; j++) {
-            if (crc & 0x0001) {
-                crc >>= 1;
-                crc ^= 0xA001; // Polin�mio CRC-16 (0xA001)
-            } else {
-                crc >>= 1;
-            }
-        }
-    }
-
-    return crc;
-}
+int oled_step = -10;
 
 void update_oled(void)
 {
@@ -588,24 +567,6 @@ void update_oled(void)
       buffer_tx_modbus[13] = crc & 0xFF; // LSB
       buffer_tx_modbus[14] = (crc >> 8) & 0xFF; // MSB  
 */
-      
-      
-      uint8_t *buffer_tx_modbus;
-      buffer_tx_modbus = ports[1].tx_msg.buf.uint8;
-      
-      buffer_tx_modbus[0] = 1; // Endere?o do escravo
-      buffer_tx_modbus[1] = 0x03; // N?mero do comando
-      buffer_tx_modbus[2] = 1; // end inicial      
-      buffer_tx_modbus[3] = 5; // N?mero de bytes a seguir 
-      uint16_t crc = CalculateCRC(buffer_tx_modbus, 4);
-    
-
-      buffer_tx_modbus[4] = crc & 0xFF; // LSB
-      buffer_tx_modbus[5] = (crc >> 8) & 0xFF; // MSB  
-      serial_write(1,buffer_tx_modbus,6);
-
-
-     // Fim do teste modbus 
     }
    
     

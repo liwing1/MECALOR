@@ -55,15 +55,14 @@
 #define __MAIN_PROGRAM__
 
 
-
-
-
 int ModoDisplay=0;
 
 volatile unsigned long Contador4096=0;
 unsigned long int TempoBotao=0;
 unsigned long int TempoDisplayOled=0;
 extern volatile int oled_step;
+unsigned long TempoMapaMemoria=0;
+
 
 #include "emeter-template.h"
 
@@ -140,6 +139,47 @@ void test_battery(void)
 }
 #endif
 
+void update_input_registers(input_registers_t* _input_registers)
+{
+  _input_registers->grandezas.tensao_linha_1 = rms_voltage(0);
+  _input_registers->grandezas.tensao_linha_2 = rms_voltage(1);
+  _input_registers->grandezas.tensao_linha_3 = rms_voltage(2);
+  _input_registers->grandezas.corrente_linha_1 = rms_current(0);
+  _input_registers->grandezas.corrente_linha_2 = rms_current(1);
+  _input_registers->grandezas.corrente_linha_3 = rms_current(2);
+  _input_registers->grandezas.potencia_ativa_tri = active_power(FAKE_PHASE_TOTAL);
+  _input_registers->grandezas.potencia_ativa_1 = active_power(0);
+  _input_registers->grandezas.potencia_ativa_2 = active_power(1);
+  _input_registers->grandezas.potencia_ativa_3 = active_power(2);
+  _input_registers->grandezas.potencia_reativa_tri = reactive_power(FAKE_PHASE_TOTAL);
+  _input_registers->grandezas.potencia_reativa_1 = reactive_power(0);
+  _input_registers->grandezas.potencia_reativa_2 = reactive_power(1);
+  _input_registers->grandezas.potencia_reativa_3 = reactive_power(2);
+  _input_registers->grandezas.potencia_aparente_tri = apparent_power(FAKE_PHASE_TOTAL);
+  _input_registers->grandezas.potencia_aparente_1 = apparent_power(0);
+  _input_registers->grandezas.potencia_aparente_2 = apparent_power(1);
+  _input_registers->grandezas.potencia_aparente_3 = apparent_power(2);
+  _input_registers->grandezas.fator_potencia_1 = power_factor(0);
+  _input_registers->grandezas.fator_potencia_2 = power_factor(1);
+  _input_registers->grandezas.fator_potencia_3 = power_factor(2);
+  _input_registers->grandezas.freq_1 = mains_frequency(0);
+  _input_registers->grandezas.freq_2 = mains_frequency(1);
+  _input_registers->grandezas.freq_3 = mains_frequency(2);
+
+  _input_registers->grandezas.energia_atv_pos = energy_consumed[FAKE_PHASE_TOTAL][APP_ACTIVE_ENERGY_IMPORTED];
+  _input_registers->grandezas.energia_atv_pos_fase_1 = energy_consumed[0][APP_ACTIVE_ENERGY_IMPORTED];
+  _input_registers->grandezas.energia_atv_pos_fase_2 = energy_consumed[1][APP_ACTIVE_ENERGY_IMPORTED];
+  _input_registers->grandezas.energia_atv_pos_fase_3 = energy_consumed[2][APP_ACTIVE_ENERGY_IMPORTED];
+
+  _input_registers->grandezas.energia_rtv_pos = (long) energy_consumed[FAKE_PHASE_TOTAL][APP_REACTIVE_ENERGY_QUADRANT_I] + (long) energy_consumed[FAKE_PHASE_TOTAL][APP_REACTIVE_ENERGY_QUADRANT_IV];
+  _input_registers->grandezas.energia_rtv_pos_fase_1 = (long) energy_consumed[0][APP_REACTIVE_ENERGY_QUADRANT_I] + (long) energy_consumed[0][APP_REACTIVE_ENERGY_QUADRANT_IV];
+  _input_registers->grandezas.energia_rtv_pos_fase_1 = (long) energy_consumed[1][APP_REACTIVE_ENERGY_QUADRANT_I] +(long)  energy_consumed[1][APP_REACTIVE_ENERGY_QUADRANT_IV];
+  _input_registers->grandezas.energia_rtv_pos_fase_1 = (long) energy_consumed[2][APP_REACTIVE_ENERGY_QUADRANT_I] + (long) energy_consumed[2][APP_REACTIVE_ENERGY_QUADRANT_IV];
+}
+
+input_registers_t input_registers;
+holding_registers_t holding_registers;
+
 #if defined(__IAR_SYSTEMS_ICC__)  ||  defined(__TI_COMPILER_VERSION__)
 void main(void)
 #else
@@ -168,7 +208,8 @@ int main(int argc, char *argv[])
         exit(2);
 #endif
      
-     system_setup(); 
+    system_setup(); 
+  
 #if defined(TRNG_PURITY_TESTS)
     fips_init();
     fips_result = -1;
@@ -178,9 +219,7 @@ int main(int argc, char *argv[])
     serial_timer_init();
     iec62056_init();
 #endif
-
-    metrology_init();
-
+    
 #if defined(ESP_SUPPORT)
     esp_start_measurement();
 #endif
@@ -192,6 +231,12 @@ int main(int argc, char *argv[])
     for (;;)
     {
         kick_watchdog();
+        
+        if(Contador4096 - TempoMapaMemoria > 4096)// atualiza 1s
+        {
+          update_input_registers(&input_registers);
+          TempoMapaMemoria = Contador4096;
+        }
 
 #if defined(IEC62056_SUPPORT)
         iec62056_service();
@@ -427,6 +472,7 @@ int main(int argc, char *argv[])
             oled_step = 0;      // Volta para tela inicial
             update_oled();
             ModoDisplay=ESPERA_TECLA_FINAL;   
+
         }
         else {    
             if ((P1IN&BIT7)!=0) {
@@ -435,6 +481,7 @@ int main(int argc, char *argv[])
             }     
         }  
         break;
+
     case ESPERA_TECLA_FINAL:
         if ((P1IN&BIT7)!=0) {
             // Botao solto

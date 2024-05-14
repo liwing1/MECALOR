@@ -71,6 +71,9 @@ extern volatile unsigned long Contador4096;
 #define NEUTRAL_DELAY_SPLIT     128
 #endif
 
+#define ADC_VOLT_NEG_TRESHOLD   338
+#define ADC_VOLT_POS_TRESHOLD   344
+
 int16_t samples_per_second;
 
 int8_t DetSeqFase[3]; //TDTD
@@ -1133,10 +1136,7 @@ void adc_interrupt(void)
 #endif
   
     
-
-    // Marca tempo para rotina de teclado
     Contador4096++;
-  
     custom_adc_interrupt();
 
 }
@@ -1284,6 +1284,3 @@ ISR(DMA, dma_interrupt)
         break;
     }
 }
-
-
-

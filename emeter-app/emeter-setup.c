@@ -53,6 +53,7 @@
 #include <emeter-toolkit.h>
 #include <hal_pmm.h>
 #include <emeter-metrology.h>
+#include <emeter-metrology-internal.h>
 
 #include "emeter-app.h"
 #include "emeter-rtc.h"
@@ -238,10 +239,12 @@ void system_setup(void)
     P1OUT = P1OUT_INIT;
     #endif
     #if defined(P1DIR_INIT)
-    P1DIR = P1DIR_INIT;
+    //P1DIR = P1DIR_INIT; LI:
+    P1DIR = 0x28;
     #endif
     #if defined(P1SEL_INIT)
-    P1SEL = P1SEL_INIT;
+    //P1SEL = P1SEL_INIT; LI:
+    P1SEL = 0x3C;
     #endif
     #if defined(P1SEL0_INIT)
     P1SEL0 = P1SEL0_INIT;
@@ -508,7 +511,7 @@ void system_setup(void)
     #endif
 
     #if defined(UART_0_SUPPORT)
-    serial_configure(0, 1, UART_0_BAUD_RATE);
+    serial_configure(0, 1, cfg_info->baud_rate);
     #endif
     #if defined(UART_1_SUPPORT)
     serial_configure(1, 1, UART_1_BAUD_RATE);
