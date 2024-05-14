@@ -530,8 +530,6 @@ void display_oled_item(int item)
     }        
 }
 
-int oled_step = -10;
-
 void update_oled(void)
 {
     ssd1306_clearDisplay();
