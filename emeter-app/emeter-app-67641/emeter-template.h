@@ -62,13 +62,13 @@
 
 /*! This defines the speed of eUSCI 0 */
 #define UART_0_SUPPORT
-#define UART_0_BAUD_RATE                            9600
+#define UART_0_BAUD_RATE                            19200
 #define UART_0_DLT645_SUPPORT
 
 /*! This defines the speed of eUSCI 1 */
 #define UART_1_SUPPORT
 #define UART_1_BAUD_RATE                            9600
-#define UART_1_DLT645_SUPPORT
+#undef UART_1_DLT645_SUPPORT
 
 // Define this macro so can send active power readings to the IHD430 via CC2530
 #define IHD430_SUPPORT
@@ -80,15 +80,14 @@
 
 #define custom_set_consumption(x,y)                 /**/
 
-#define LCD_DISPLAY_SUPPORT
+#undef  LCD_DISPLAY_SUPPORT
+#define  OLED_DISPLAY_SUPPORT
 
 #define USE_STARBURST
 #define USE_7SEGMENT
 
 #define STARBURST_FIELD                             1
 #define NUMERIC_FIELD                               2
-
-#define LCD_BARGRAPH_SUPPORT
 
 #define ICON_PHASE_A                                LCD_PIE_CHART_SEG_1
 #define ICON_PHASE_B                                LCD_PIE_CHART_SEG_4
@@ -204,7 +203,7 @@ static const uint8_t field2_dp_icons[] = \
 /* LCD display sequence table */
 #define DISPLAY_STEP_SEQUENCE \
     DISPLAY_ITEM_SELECT_PHASE_1, \
-        DISPLAY_ITEM_ACTIVE_POWER, \
+        DISPLAY_ITEM_TEMPERATURE, \
     DISPLAY_ITEM_SELECT_PHASE_1, \
         DISPLAY_ITEM_REACTIVE_POWER, \
     DISPLAY_ITEM_SELECT_PHASE_1, \
@@ -264,7 +263,7 @@ static const uint8_t field2_dp_icons[] = \
     DISPLAY_ITEM_SELECT_TOTAL, \
         DISPLAY_ITEM_TIME, \
     DISPLAY_ITEM_SELECT_TOTAL, \
-        DISPLAY_ITEM_DATE, \
+       DISPLAY_ITEM_DATE, \
     DISPLAY_ITEM_SELECT_RESTART
 
 #define custom_lcd_clear_periphery() \
@@ -391,9 +390,9 @@ static const uint8_t field2_dp_icons[] = \
  */
 
 #define P2DIR_INIT                                  (BIT3)
-#define P2SEL_INIT                                  (BIT3 | BIT2)
-#define P2OUT_INIT                                  (0)
-#define P2REN_INIT                                  (0)
+#define P2SEL_INIT                                  (BIT3 | BIT2| BIT1 | BIT0)
+#define P2OUT_INIT                                  (0) //(BIT1 | BIT0)
+#define P2REN_INIT                                  (0) //(BIT1 | BIT0)
 
 /*
     P3.0 = GPIO
@@ -420,7 +419,7 @@ static const uint8_t field2_dp_icons[] = \
     P4.6 = LCD segment line 29
     P4.7 = LCD segment line 28
  */
-#define P4DIR_INIT                                  (0)
+#define P4DIR_INIT                                  (BIT0)
 #define P4SEL_INIT                                  (0)
 #define P4OUT_INIT                                  (0)
 #define P4REN_INIT                                  (0)

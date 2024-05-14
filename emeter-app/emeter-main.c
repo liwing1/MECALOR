@@ -35,6 +35,8 @@
 
 /*! \file emeter-structs.h */
 
+
+
 #include <inttypes.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -51,6 +53,13 @@
 #include <msp430.h>
 #endif
 #define __MAIN_PROGRAM__
+
+int ModoDisplay=0;
+volatile unsigned long Contador4096=0;
+unsigned long TempoMapaMemoria=0;
+unsigned long int TempoBotao=0;
+unsigned long int TempoDisplayOled=0;
+
 
 #include "emeter-template.h"
 
@@ -74,9 +83,17 @@
 #include "emeter-app.h"
 #include "emeter-rtc.h"
 #include "emeter-lcd.h"
-#include "emeter-basic-display.h"
+
 #include "emeter-keypad.h"
 #include "emeter-autocal.h"
+
+#if defined(OLED_DISPLAY_SUPPORT)  
+#include "emeter-basic-oled.h"
+#endif
+#if defined(LCD_DISPLAY_SUPPORT)
+#include "emeter-basic-display.h"
+#endif
+
 #if defined(IHD430_SUPPORT)
 #include "emeter-communication.h"
 #endif
@@ -87,16 +104,6 @@ uint8_t salt[16];
 int salt_counter = 0;
 #endif
 
-
-
-
-
-
-
-
-#if defined(LCD_BARGRAPH_SUPPORT)
-uint8_t bar_strength = 0;
-#endif
 
 #if !defined(NO_ENERGY_ACCUMULATION)
 /* These are all the possible types of consumed energies */
@@ -128,6 +135,47 @@ void test_battery(void)
 }
 #endif
 
+void update_input_registers(input_registers_t* _input_registers)
+{
+  _input_registers->grandezas.tensao_linha_1 = rms_voltage(0);
+  _input_registers->grandezas.tensao_linha_2 = rms_voltage(1);
+  _input_registers->grandezas.tensao_linha_3 = rms_voltage(2);
+  _input_registers->grandezas.corrente_linha_1 = rms_current(0);
+  _input_registers->grandezas.corrente_linha_2 = rms_current(1);
+  _input_registers->grandezas.corrente_linha_3 = rms_current(2);
+  _input_registers->grandezas.potencia_ativa_tri = active_power(FAKE_PHASE_TOTAL);
+  _input_registers->grandezas.potencia_ativa_1 = active_power(0);
+  _input_registers->grandezas.potencia_ativa_2 = active_power(1);
+  _input_registers->grandezas.potencia_ativa_3 = active_power(2);
+  _input_registers->grandezas.potencia_reativa_tri = reactive_power(FAKE_PHASE_TOTAL);
+  _input_registers->grandezas.potencia_reativa_1 = reactive_power(0);
+  _input_registers->grandezas.potencia_reativa_2 = reactive_power(1);
+  _input_registers->grandezas.potencia_reativa_3 = reactive_power(2);
+  _input_registers->grandezas.potencia_aparente_tri = apparent_power(FAKE_PHASE_TOTAL);
+  _input_registers->grandezas.potencia_aparente_1 = apparent_power(0);
+  _input_registers->grandezas.potencia_aparente_2 = apparent_power(1);
+  _input_registers->grandezas.potencia_aparente_3 = apparent_power(2);
+  _input_registers->grandezas.fator_potencia_1 = power_factor(0);
+  _input_registers->grandezas.fator_potencia_2 = power_factor(1);
+  _input_registers->grandezas.fator_potencia_3 = power_factor(2);
+  _input_registers->grandezas.freq_1 = mains_frequency(0);
+  _input_registers->grandezas.freq_2 = mains_frequency(1);
+  _input_registers->grandezas.freq_3 = mains_frequency(2);
+
+  _input_registers->grandezas.energia_atv_pos = energy_consumed[FAKE_PHASE_TOTAL][APP_ACTIVE_ENERGY_IMPORTED];
+  _input_registers->grandezas.energia_atv_pos_fase_1 = energy_consumed[0][APP_ACTIVE_ENERGY_IMPORTED];
+  _input_registers->grandezas.energia_atv_pos_fase_2 = energy_consumed[1][APP_ACTIVE_ENERGY_IMPORTED];
+  _input_registers->grandezas.energia_atv_pos_fase_3 = energy_consumed[2][APP_ACTIVE_ENERGY_IMPORTED];
+
+  _input_registers->grandezas.energia_rtv_pos = (long) energy_consumed[FAKE_PHASE_TOTAL][APP_REACTIVE_ENERGY_QUADRANT_I] + (long) energy_consumed[FAKE_PHASE_TOTAL][APP_REACTIVE_ENERGY_QUADRANT_IV];
+  _input_registers->grandezas.energia_rtv_pos_fase_1 = (long) energy_consumed[0][APP_REACTIVE_ENERGY_QUADRANT_I] + (long) energy_consumed[0][APP_REACTIVE_ENERGY_QUADRANT_IV];
+  _input_registers->grandezas.energia_rtv_pos_fase_1 = (long) energy_consumed[1][APP_REACTIVE_ENERGY_QUADRANT_I] +(long)  energy_consumed[1][APP_REACTIVE_ENERGY_QUADRANT_IV];
+  _input_registers->grandezas.energia_rtv_pos_fase_1 = (long) energy_consumed[2][APP_REACTIVE_ENERGY_QUADRANT_I] + (long) energy_consumed[2][APP_REACTIVE_ENERGY_QUADRANT_IV];
+}
+
+input_registers_t input_registers;
+holding_registers_t holding_registers;
+
 #if defined(__IAR_SYSTEMS_ICC__)  ||  defined(__TI_COMPILER_VERSION__)
 void main(void)
 #else
@@ -155,7 +203,8 @@ int main(int argc, char *argv[])
     if (start_host_environment(argc, argv) < 0)
         exit(2);
 #endif
-    system_setup();
+     
+    system_setup(); 
 #if defined(TRNG_PURITY_TESTS)
     fips_init();
     fips_result = -1;
@@ -165,9 +214,7 @@ int main(int argc, char *argv[])
     serial_timer_init();
     iec62056_init();
 #endif
-
-    metrology_init();
-
+    
 #if defined(ESP_SUPPORT)
     esp_start_measurement();
 #endif
@@ -179,6 +226,12 @@ int main(int argc, char *argv[])
     for (;;)
     {
         kick_watchdog();
+        
+        if(Contador4096 - TempoMapaMemoria > 4096)// atualiza 1s
+        {
+          update_input_registers(&input_registers);
+          TempoMapaMemoria = Contador4096;
+        }
 
 #if defined(IEC62056_SUPPORT)
         iec62056_service();
@@ -357,23 +410,90 @@ int main(int argc, char *argv[])
 #endif
 
 #if defined(RTC_SUPPORT)
+
+#if 1
+        
+#define TEMPO_OLED_NORMAL  2000L*4096/1000 // 2000 ms
+//#define TEMPO_OLED_RAPIDO  400L*4096/1000 //  400 ms
+#define TEMPO_BOTAO_RAPIDO  700L*4096/1000 //  700 ms
+
+
+    switch (ModoDisplay)
+    {
+    case 0: // Inicio
+            ModoDisplay=1;
+#if defined(OLED_DISPLAY_SUPPORT)
+            update_oled();
+#endif // OLED_DISPLAY_SUPPORT
+            TempoDisplayOled=Contador4096; // Reseta timer
+        break;
+
+    case 1: // Botao solto, esperando botao ser pressionado
+        if ((P1IN&BIT7)==0) {
+            // Botao Pressionado
+            ModoDisplay=2;
+        }    
+        else if ((Contador4096-TempoDisplayOled) > TEMPO_OLED_NORMAL) {
+#if defined(OLED_DISPLAY_SUPPORT)      
+            update_oled();
+#endif // OLED_DISPLAY_SUPPORT
+            TempoDisplayOled=Contador4096; // Reseta timer
+       }
+        break;
+    case 2: // Botao pressionado => Pare
+        if ((P1IN&BIT7)!=0) {
+            // Botao Solto
+               TempoDisplayOled=Contador4096; // Reseta timer
+               ModoDisplay=3;
+            }   
+        break;
+    case 3:
+        if ((P1IN&BIT7)==0) {
+            // Botao pressionado
+#if defined(OLED_DISPLAY_SUPPORT)
+            update_oled();
+#endif // OLED_DISPLAY_SUPPORT            
+            TempoDisplayOled=Contador4096; // Reseta timer
+            TempoBotao=Contador4096; // Reseta timer 
+            ModoDisplay=4;
+        }
+        break;
+    case 4:
+        if ((Contador4096-TempoBotao) > TEMPO_BOTAO_RAPIDO) {
+            TempoDisplayOled=Contador4096; // Reseta timer
+            ModoDisplay=1;   
+        }
+        else {    
+            if ((P1IN&BIT7)!=0) {
+                // Botao Solto
+                ModoDisplay=3; 
+            }     
+        }  
+        break;
+    default:
+        break;
+    }
+#endif
         /* Do display and other housekeeping here */
         if ((rtc_status & RTC_STATUS_TICKER))
         {
             /* Two seconds have passed */
             /* We have a 2 second tick */
             rtc_status &= ~RTC_STATUS_TICKER;
-    #if defined(LCD_BARGRAPH_SUPPORT)
-            bar_graph(bar_strength);
-            if (++bar_strength > 6)
-                bar_strength = 1;
-    #endif
-    #if defined(LCD_DISPLAY_SUPPORT)
+
+#if 0
+        #if defined(OLED_DISPLAY_SUPPORT) 
+            update_oled();
+        #endif
+
+        #if defined(LCD_DISPLAY_SUPPORT)
             /* Update the display, cycling through the phases */
             update_display();
-    #endif
+        #endif
+#endif
+
     #if !defined(__MSP430_HAS_RTC_C__)  &&  defined(RTC_SUPPORT)  &&  defined(CORRECTED_RTC_SUPPORT)
-            correct_rtc();
+         correct_rtc();
     #endif
         }
 #endif
@@ -731,7 +851,7 @@ int is_calibration_enabled(void)
                  /* WDT_VECTOR, */ \
                  UNMI_VECTOR, \
                  SYSNMI_VECTOR
-#elif defined(__MSP430F67641__)
+#elif defined(__MSP430F67641__) || defined(__MSP430F67641A__)
 #pragma vector = /* RTC_VECTOR, */ \
 	             LCD_C_VECTOR, \
                  TIMER3_A1_VECTOR, \
