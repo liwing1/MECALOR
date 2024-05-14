@@ -35,6 +35,8 @@
 
 /*! \file emeter-structs.h */
 
+
+
 #include <inttypes.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -51,6 +53,17 @@
 #include <msp430.h>
 #endif
 #define __MAIN_PROGRAM__
+
+
+
+
+
+int ModoDisplay=0;
+
+volatile unsigned long Contador4096=0;
+unsigned long int TempoBotao=0;
+unsigned long int TempoDisplayOled=0;
+extern volatile int oled_step;
 
 #include "emeter-template.h"
 
@@ -74,9 +87,17 @@
 #include "emeter-app.h"
 #include "emeter-rtc.h"
 #include "emeter-lcd.h"
-#include "emeter-basic-display.h"
+
 #include "emeter-keypad.h"
 #include "emeter-autocal.h"
+
+#if defined(OLED_DISPLAY_SUPPORT)  
+#include "emeter-basic-oled.h"
+#endif
+#if defined(LCD_DISPLAY_SUPPORT)
+#include "emeter-basic-display.h"
+#endif
+
 #if defined(IHD430_SUPPORT)
 #include "emeter-communication.h"
 #endif
@@ -87,16 +108,6 @@ uint8_t salt[16];
 int salt_counter = 0;
 #endif
 
-
-
-
-
-
-
-
-#if defined(LCD_BARGRAPH_SUPPORT)
-uint8_t bar_strength = 0;
-#endif
 
 #if !defined(NO_ENERGY_ACCUMULATION)
 /* These are all the possible types of consumed energies */
@@ -113,6 +124,7 @@ uint32_t sag_duration[NUM_PHASES];
 uint16_t swell_events[NUM_PHASES];
 uint32_t swell_duration[NUM_PHASES]; 
 #endif
+
 
 static __inline__ int32_t abs32(int32_t x)
 {
@@ -155,7 +167,8 @@ int main(int argc, char *argv[])
     if (start_host_environment(argc, argv) < 0)
         exit(2);
 #endif
-    system_setup();
+     
+     system_setup(); 
 #if defined(TRNG_PURITY_TESTS)
     fips_init();
     fips_result = -1;
@@ -357,23 +370,101 @@ int main(int argc, char *argv[])
 #endif
 
 #if defined(RTC_SUPPORT)
+
+#if 1
+        
+#define TEMPO_OLED_NORMAL  2000L*4096/1000 // 2000 ms
+#define TEMPO_BOTAO_RAPIDO  1000L*4096/1000 //  1000 ms
+
+  enum EstadosTeclado {
+  INICIA_ESPERA_PRIMEIRO_TECLA,
+  ESPERA_PRIMEIRO_APERTO,
+  ESPERA_PRIMEIRA_SOLTURA,  
+  ESPERA_TECLA_APERTAR, 
+  ESPERA_TECLA_SOLTAR,   
+  ESPERA_TECLA_FINAL };
+  
+  
+  
+    switch (ModoDisplay)
+    {
+    case INICIA_ESPERA_PRIMEIRO_TECLA: // Inicio
+            ModoDisplay=ESPERA_PRIMEIRO_APERTO;
+            update_oled();
+            TempoDisplayOled=Contador4096; // Reseta timer
+        break;
+
+    case ESPERA_PRIMEIRO_APERTO: // Botao solto, esperando botao ser pressionado
+        if ((P1IN&BIT7)==0) {
+            // Botao Pressionado
+            ModoDisplay=ESPERA_PRIMEIRA_SOLTURA;
+        }    
+        else if ((Contador4096-TempoDisplayOled) > TEMPO_OLED_NORMAL) {
+            update_oled();
+            TempoDisplayOled=Contador4096; // Reseta timer
+       }
+        break;
+    case ESPERA_PRIMEIRA_SOLTURA: // Botao pressionado => Pare
+        if ((P1IN&BIT7)!=0) {
+            // Botao Solto
+               TempoDisplayOled=Contador4096; // Reseta timer
+               ModoDisplay=ESPERA_TECLA_APERTAR;
+            }   
+        break;
+    case ESPERA_TECLA_APERTAR:
+        if ((P1IN&BIT7)==0) {
+            // Botao pressionado
+            update_oled();
+            TempoDisplayOled=Contador4096; // Reseta timer
+            TempoBotao=Contador4096; // Reseta timer 
+            ModoDisplay=ESPERA_TECLA_SOLTAR;
+        }
+        break;
+    case ESPERA_TECLA_SOLTAR:
+        if ((Contador4096-TempoBotao) > TEMPO_BOTAO_RAPIDO) {
+            TempoDisplayOled=Contador4096; // Reseta timer
+
+            oled_step = 0;      // Volta para tela inicial
+            update_oled();
+            ModoDisplay=ESPERA_TECLA_FINAL;   
+        }
+        else {    
+            if ((P1IN&BIT7)!=0) {
+                // Botao Solto
+                ModoDisplay=3; 
+            }     
+        }  
+        break;
+    case ESPERA_TECLA_FINAL:
+        if ((P1IN&BIT7)!=0) {
+            // Botao solto
+            ModoDisplay=ESPERA_PRIMEIRO_APERTO;
+        }
+        break;        
+    default:
+        break;
+    }
+#endif
         /* Do display and other housekeeping here */
         if ((rtc_status & RTC_STATUS_TICKER))
         {
             /* Two seconds have passed */
             /* We have a 2 second tick */
             rtc_status &= ~RTC_STATUS_TICKER;
-    #if defined(LCD_BARGRAPH_SUPPORT)
-            bar_graph(bar_strength);
-            if (++bar_strength > 6)
-                bar_strength = 1;
-    #endif
-    #if defined(LCD_DISPLAY_SUPPORT)
+
+#if 0
+        #if defined(OLED_DISPLAY_SUPPORT) 
+            update_oled();
+        #endif
+
+        #if defined(LCD_DISPLAY_SUPPORT)
             /* Update the display, cycling through the phases */
             update_display();
-    #endif
+        #endif
+#endif
+
     #if !defined(__MSP430_HAS_RTC_C__)  &&  defined(RTC_SUPPORT)  &&  defined(CORRECTED_RTC_SUPPORT)
-            correct_rtc();
+         correct_rtc();
     #endif
         }
 #endif
@@ -444,12 +535,12 @@ void active_energy_pulse_start(int ph)
     #if NUM_PHASES == 1
 void active_energy_pulse_end(void)
 {
-    custom_active_energy_pulse_end();
+    //custom_active_energy_pulse_end();
 }
     #else
 void active_energy_pulse_end(int ph)
 {
-    custom_active_energy_pulse_end(ph);
+    // custom_active_energy_pulse_end(ph);
 }
     #endif
 #endif
@@ -731,7 +822,7 @@ int is_calibration_enabled(void)
                  /* WDT_VECTOR, */ \
                  UNMI_VECTOR, \
                  SYSNMI_VECTOR
-#elif defined(__MSP430F67641__)
+#elif defined(__MSP430F67641__) || defined(__MSP430F67641A__)
 #pragma vector = /* RTC_VECTOR, */ \
 	             LCD_C_VECTOR, \
                  TIMER3_A1_VECTOR, \

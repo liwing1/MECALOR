@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  emeter-app.h -
+ *  emeter-basic_display.h -
  *
  *  Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/ 
  * 
@@ -35,43 +35,13 @@
 
 /*! \file */
 
-#if !defined(_METER_APP_H_)
-#define _METER_APP_H_
-
-#define SCFI0_LOW       (FLLD_1)        /* Freq = 1.024MHz */
-#define SCFQCTL_LOW     (32 - 1)
-
-#if defined(__MSP430_HAS_SD24_B__)
-/* Run at 16.777216MHz */
-#define DCO_CLOCK_SPEED 16
-#define SCFI0_HIGH      (FN_3 | FLLD_4)
-#define SCFQCTL_HIGH    (128 - 1)
-#define IR_38K_DIVISOR  (220)
-#elif defined(__MSP430_HAS_SD16_A3__)  ||  defined(__MSP430_HAS_SD16_A4__)  ||  defined(__MSP430_HAS_SD16_A6__)  ||  defined(__MSP430_HAS_SD16_A7__)
-/* Run at 16.777216MHz */
-#define DCO_CLOCK_SPEED 16
-#define SCFI0_HIGH      (FN_3 | FLLD_4)
-#define SCFQCTL_HIGH    (128 - 1)
-#define IR_38K_DIVISOR  (220)
-#else
-/* Run at 8.388608MHz */
-#define DCO_CLOCK_SPEED 8
-#define SCFI0_HIGH      (FN_3 | FLLD_4)
-#define SCFQCTL_HIGH    (64 - 1)
-#define IR_38K_DIVISOR  (110)
+#if !defined(_EMETER_BASIC_DISPLAY_H_)
+#define _EMETER_BASIC_DISPLAY_H_
 #endif
 
-/*! \brief Initialise all the data and peripherals, and prepare the machine to run
-    after reset. */
-void system_setup(void);
+#if defined(OLED_DISPLAY_SUPPORT)  
 
-void display_startup_message(void);
+void update_oled(void);
 void OLED_display_startup_message(void);
-
-#if defined(__MSP430__)  &&  defined(USE_WATCHDOG)
-#define kick_watchdog()             WDTCTL = WDT_ARST_1000 //TODO 
-#else
-#define kick_watchdog()             /**/
-#endif
 
 #endif

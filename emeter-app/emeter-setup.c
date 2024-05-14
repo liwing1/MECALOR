@@ -58,6 +58,7 @@
 #include "emeter-rtc.h"
 #include "emeter-lcd.h"
 #include "emeter-communication.h"
+#include "emeter-oled.h" 
 
 static __inline__ void set_clock_slow(void)
 {
@@ -464,6 +465,16 @@ void system_setup(void)
     lcd_init();
     display_startup_message();
     #endif
+     
+    #if defined(OLED_DISPLAY_SUPPORT)
+    i2c_init();
+    SSD1306_Init();
+    OLED_display_startup_message();
+    //Oled_teste();
+    __delay_cycles(100000000);
+    #endif
+    
+
 
     #if defined(IO_EXPANDER_SUPPORT)
     set_io_expander(0, 0);
@@ -479,8 +490,11 @@ void system_setup(void)
     TACTL = TACLR | MC_1 | TASSEL_1;
     #endif
 
+
+    
     metrology_init();
     metrology_disable_analog_front_end();
+    
 
     #if defined(POWER_UP_BY_SUPPLY_SENSING)
     /* Set up comparator A to monitor a drooping voltage within the
