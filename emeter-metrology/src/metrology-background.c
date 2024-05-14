@@ -47,6 +47,8 @@
 #include <signal.h>
 #endif
 
+extern volatile unsigned long Contador4096;
+
 #include <emeter-toolkit.h>
 
 #include "emeter-metrology.h"
@@ -68,6 +70,9 @@
 #define PHASE_6_DELAY_SPLIT     128
 #define NEUTRAL_DELAY_SPLIT     128
 #endif
+
+#define ADC_VOLT_NEG_TRESHOLD   338
+#define ADC_VOLT_POS_TRESHOLD   344
 
 int16_t samples_per_second;
 
@@ -919,6 +924,7 @@ void adc_interrupt(void)
 #endif
 {
 #if defined(__HAS_SD_ADC__)
+
     if (!ADC_VOLTAGE_PENDING(PHASE_1_VOLTAGE_ADC_CHANNEL))
     {
         /* We do not have a complete set of samples yet, but we may need to pick
@@ -1085,7 +1091,23 @@ void adc_interrupt(void)
         adc_i_buffer[NUM_PHASES] = ADC_CURRENT(NEUTRAL_CURRENT_ADC_CHANNEL);
     #endif
 #endif
+  
+    
+//TDTD   
+ //    P8OUT &= ~BIT4;
+//int CContador4096=0;
 
+    Contador4096++;
+
+    //if (CContador4096&0x100000) {
+
+//        P8OUT |= BIT4;
+    //}
+    //else {
+    //    P8OUT &= ~BIT4;
+    //}
+
+    
     custom_adc_interrupt();
 
 }
@@ -1233,6 +1255,3 @@ ISR(DMA, dma_interrupt)
         break;
     }
 }
-
-
-

@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  emeter-dlt645.h -
+ *  emeter-basic_display.h -
  *
  *  Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/ 
  * 
@@ -35,16 +35,13 @@
 
 /*! \file */
 
-#if !defined(_EMETER_DLT645_H_)
-#define _EMETER_DLT645_H_
+#if !defined(_EMETER_BASIC_DISPLAY_H_)
+#define _EMETER_BASIC_DISPLAY_H_
+#endif
 
-void dlt645_rx_restart(void);
+#if defined(OLED_DISPLAY_SUPPORT)  
 
-void dlt645_rx_byte(int port, uint8_t c);
-
-void dlt645_service(void);
-
-uint8_t process_preset_single_reg(int port, uint16_t write_reg, uint16_t write_data);
-uint8_t process_read_inp_reg(int port, uint16_t first_reg, uint16_t n_reg);
+void update_oled(void);
+void OLED_display_startup_message(void);
 
 #endif
