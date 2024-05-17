@@ -420,7 +420,7 @@ static const uint8_t field2_dp_icons[] = \
     P4.6 = LCD segment line 29
     P4.7 = LCD segment line 28
  */
-#define P4DIR_INIT                                  (0)
+#define P4DIR_INIT                                  (BIT0)
 #define P4SEL_INIT                                  (0)
 #define P4OUT_INIT                                  (0)
 #define P4REN_INIT                                  (0)

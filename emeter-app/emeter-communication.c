@@ -220,6 +220,8 @@ int serial_configure(int port, int mode, uint32_t bit_rate)
         /* If you do not initially kick the Tx port the TXEPT bit is not set. */
         TXBUF0 = 0;
     #endif
+        UCA0BRW = 0x00A3;
+        UCA0MCTLW = 0x55D1; 
         return 0;
 #endif
 #if defined(UART_1_SUPPORT)
@@ -261,6 +263,8 @@ int serial_configure(int port, int mode, uint32_t bit_rate)
         /* If you do not initially kick the Tx port, the TXEPT bit is not set. */
         TXBUF1 = 0;
     #endif
+        UCA1BRW = 0x00A3;
+        UCA1MCTLW = 0x55D1; 
         return 0;
 #endif
 #if defined(UART_2_SUPPORT)
@@ -322,6 +326,7 @@ int serial_configure(int port, int mode, uint32_t bit_rate)
 
 void serial_write(int port, const uint8_t buf[], int len)
 {
+    P4OUT |= BIT0;
     ports[port].tx_in_progress = true;
     ports[port].tx_msg.ptr = 0;
     ports[port].tx_msg.len = len;
@@ -452,8 +457,10 @@ ISR(USART0TX, USART0_tx_isr)
 
     tx = uart_tx_core(0);
     TXBUF0 = tx & 0xFF;
-    if (tx & 0x8000)
+    if (tx & 0x8000){
         U0IE &= ~UTXIE0;
+        P4OUT &=~BIT0;
+    }
 }
 /*- End of function --------------------------------------------------------*/
     #elif defined(__MSP430_HAS_USCI_AB0__)
@@ -470,8 +477,10 @@ ISR(USCIAB0TX, USCI_AB0_tx_isr)
 
     tx = uart_tx_core(0);
     UCA0TXBUF = tx & 0xFF;
-    if (tx & 0x8000)
-        UC0IE &= ~UCA0TXIE;
+    if (tx & 0x8000){
+        U0IE &= ~UTXIE0;
+        P4OUT &=~BIT0;
+    }
 }
 /*- End of function --------------------------------------------------------*/
         #endif
@@ -490,8 +499,10 @@ ISR(USCI_A0, USCI_A0_isr)
     case USCI_UART_UCTXIFG:
         tx = uart_tx_core(0);
         UCA0TXBUF = tx & 0xFF;
-        if (tx & 0x8000)
-            UCA0IE &= ~UCTXIE;
+        if (tx & 0x8000){
+            U0IE &= ~UTXIE0;
+            P4OUT &=~BIT0;
+        }
         break;
     }
 }
@@ -512,8 +523,10 @@ ISR(USCI_A0, USCI_A0_isr)
        
         tx = uart_tx_core(0);
         UCA0TXBUF = tx & 0xFF;
-        if (tx & 0x8000)
-            UCA0IE &= ~UCTXIE;
+        if (tx & 0x8000){
+            U0IE &= ~UTXIE0;
+            P4OUT &=~BIT0;
+        }
        
         break;
     case USCI_UART_UCSTTIFG:
