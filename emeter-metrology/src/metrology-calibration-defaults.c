@@ -315,18 +315,26 @@ const struct calibration_data_s calibration_defaults =
 
 const struct configuration_data_s configuration_defaults = 
 {
-    .baud_rate = DEFAULT_BAUD_RATE,
+    .baud_rate = 9600,
 };
 
 void set_cfg_baud_rate(uint16_t baud_rate)
 {
-    clear_calibration_data();
-    flash_memcpy((void *) cal_info, (const void *) &calibration_defaults, sizeof(calibration_defaults));
-    flash_secure();
+    // clear_calibration_data();
+    // flash_memcpy((void *) cal_info, (const void *) &calibration_defaults, sizeof(calibration_defaults));
+    // flash_secure();
 
-    flash_memcpy((void*) &cfg_info->baud_rate, (const void *)&baud_rate, sizeof(uint16_t));
-    //flash_memcpy((void *) cfg_info, (const void *) &baud_rate, sizeof(configuration_defaults));
+    // flash_memcpy((void*) &cfg_info->baud_rate, (const void *)&baud_rate, sizeof(uint16_t));
+    // //flash_memcpy((void *) cfg_info, (const void *) &baud_rate, sizeof(configuration_defaults));
+    // flash_secure();
+    
+    flash_write_int16((int16_t *) &cfg_info->baud_rate, baud_rate);
     flash_secure();
+}
+
+uint16_t get_cfg_baud_rate(void)
+{
+    return cfg_info->baud_rate;
 }
 
 int16_t get_v_dc_estimate(int phx, int which)
@@ -672,4 +680,11 @@ int clear_calibration_data(void)
         flash_clr((int16_t *) (((int8_t *) &nv_parms) + __MSP430_INFOA_MEM_SIZE__));
 #endif
     return 0;
+}
+
+void write_calibration_data(const void* cal_data, const void* cfg_data)
+{
+  flash_memcpy((void*) cal_info, cal_data, sizeof(calibration_defaults));
+  flash_memcpy((void*) cfg_info, cfg_data, sizeof(uint16_t));
+  flash_secure();   
 }
